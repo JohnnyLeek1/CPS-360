@@ -59,6 +59,9 @@
  *                  prevent alphabetical characters from being passed as input (as this makes the built in atoi function
  *                  return 0).
  *
+ *                  The program also exits if node deletion fails (for whatever reason). This is signified by the
+ *                  deleteFromList() function returning a 0.
+ *
  *  Limitations: This program won't work for 0 or negative inputs. It also has a range of 5 (though this can be changed
  *               by modifying the source and updating the RANGE definition).
  *
@@ -73,14 +76,26 @@
 typedef struct node { int value; struct node *next; } Node;
 
 
-void usage(char *progname) {
-    fprintf(stderr, "Error. Usage: %s <event-count>\n", progname); 
-    exit(1);
+/*
+ * Frees the provided node from memory and
+ * sets its reference to null
+ */
+void freeNode(Node **pointer) {
+    if(*pointer) free(*pointer);
+    *pointer = NULL;
 }
 
+/*
+ * Searches list for node containing x, if found then "current" node
+ * is set to the found value, and "previous" is set to the node
+ * before it. If the value is not found, then "current" is undefined
+ * and "previous" is irrelevant
+ */
 void search(Node *list, Node **current, Node **previous, int x) {
     *current = list;
     *previous = NULL;
+
+    /* Iterate through each node and return when the value is found */
     while(*current) {
         if( (*current)->value == x ) return;
         *previous = *current;
@@ -88,14 +103,19 @@ void search(Node *list, Node **current, Node **previous, int x) {
     }
 }
 
-void freeNode(Node **pointer) {
-    if(*pointer) free(*pointer);
-    *pointer = NULL;
-}
-
+/*
+ *  Deletes a node from the given list after the predecessor node.
+ *
+ *  Returns an int of either 1 (success) or 0 (failure)
+ */
 int deleteFromList(Node **list, Node *predecessor) {
     Node **currentNode = list;
 
+    /* 
+     * If the previous node is null, then this is the first node in the list.
+     * Because this is the case, we just pop the first node from the list and
+     * return.
+     */
     if(predecessor == NULL) {
         Node *tempNode = *list;
         *currentNode = (*currentNode)->next;
@@ -106,12 +126,15 @@ int deleteFromList(Node **list, Node *predecessor) {
         return 1;
     }
     
+    /* Otherwise we iterate through each node */
     while(*currentNode) {
-
+        
+        /* If the next node is null, then something has gone wrong, and return error code 0*/
         if( (*currentNode)->next == NULL ) {
             return 0;
         }
 
+        /* If the current value is the same as the predecessor value, then we need to delete the next node*/
         if( (*currentNode)->value == predecessor->value ) {         
             
             Node *tempNode = (*currentNode)->next;
@@ -132,10 +155,17 @@ int deleteFromList(Node **list, Node *predecessor) {
     return 0;
 }
 
+/*
+ * Allocates memory for a new node
+ */
 void getNode(Node **pointer) {
     *pointer = malloc(sizeof(Node));
 }
 
+/*
+ * Prints out the provided list in
+ * a readable format
+ */
 void printList(Node *list) {
     Node *current = list;
 
@@ -148,19 +178,10 @@ void printList(Node *list) {
 }
 
 /*
- * 
+ * Inserts a node with value 'x', at the
+ * head of the provided list
  */
 int insertInList(Node **list, int x) {
-
-    //if(*list != NULL) {
-    //    search(*list, &searchNode, &previousNode, x);
-    //
-    //    if(searchNode != NULL) {
-    //        deleteFromList(list, previousNode);
-    //        return 1;
-    //    }
-    //}
-
     Node *newNode;
 
     /* Assign memory to new node */
@@ -175,13 +196,6 @@ int insertInList(Node **list, int x) {
 
 }
 
-/* 
- * Generates and returns a random number 
- * between 0 and the defined RANGE variable.
- */
-int nextNum() {
-    return (random() % RANGE);
-}
 
 /*
  * Iterates through each node in the list, and calls
@@ -204,6 +218,23 @@ void freeList(Node **list) {
 
 }
 
+/* 
+ * Generates and returns a random number 
+ * between 0 and the defined RANGE variable.
+ */
+int nextNum() {
+    return (random() % RANGE);
+}
+
+/*
+ * Prints the usage instructions for the program to stderr and exits
+ */
+void usage(char *progname) {
+    fprintf(stderr, "Error. Usage: %s <event-count>\n", progname); 
+    exit(1);
+}
+
+/* Entry point of program */
 int main(int argc, char *argv[]) {
     Node *levens, *lodds, *previous, *current;
     int x;
@@ -245,7 +276,10 @@ int main(int argc, char *argv[]) {
              * otherwise insert it.
              */
             if(current != NULL) {
-                deleteFromList(selectedList, previous);
+                if (deleteFromList(selectedList, previous) == 0) {
+                    fprintf(stderr, "An error occurred deleting an element from the list. Exiting\n");
+                    exit(1);
+                }
             } else {
                 insertInList(selectedList, x);
             }
@@ -258,7 +292,7 @@ int main(int argc, char *argv[]) {
     }
   
 
-    /* Print and then delete each list */
+    /* Print and then delete each list from memory */
     printf("Odds: ");
     printList(lodds);
 
