@@ -21,8 +21,7 @@
  *              - current: Current node
  *
  *            We also have defined "RANGE" at the top of the program. This allows us to pick an 
- *            arbitrary (exclusive) range. Exclusive in this case meaning that it contains all values
- *            from 0 - (range - 1). If RANGE is set to 9999, then our range of numbers is 0-9998.
+ *            arbitrary (inclusive) range.
  *
  *            Then we check the user input to ensure that the user has provided the correct amount
  *            and syntax of arguments to the program.
@@ -47,12 +46,12 @@
  *
  *  Accessing functions for the data structure: We access the list and modify the nodes in the following functions:
  *                                                  - search()
- *                                                  - freeNode()
- *                                                  - deleteFromList()
- *                                                  - getNode()
- *                                                  - printList()
- *                                                  - insertInList()
- *                                                  - freeList()
+ *                                                  - freenode()
+ *                                                  - deletefromlist()
+ *                                                  - getnode()
+ *                                                  - printlist()
+ *                                                  - insertinlist()
+ *                                                  - freelist()
  *
  *  Errors handled: The program will exit if the user either doesn't provide an argument, or specifies the event count
  *                  as less than or equal to 0 (event count must be positive). By not allowing 0 as an input, we also
@@ -60,7 +59,7 @@
  *                  return 0).
  *
  *                  The program also exits if node deletion fails (for whatever reason). This is signified by the
- *                  deleteFromList() function returning a 0.
+ *                  deletefromlist() function returning a 0.
  *
  *  Limitations: This program won't work for 0 or negative inputs. It also has a range of 5 (though this can be changed
  *               by modifying the source and updating the RANGE definition).
@@ -80,7 +79,7 @@ typedef struct node { int value; struct node *next; } Node;
  * Frees the provided node from memory and
  * sets its reference to null
  */
-void freeNode(Node **pointer) {
+void freenode(Node **pointer) {
     if(*pointer) free(*pointer);
     *pointer = NULL;
 }
@@ -95,7 +94,6 @@ void search(Node *list, Node **current, Node **previous, int x) {
     *current = list;
     *previous = NULL;
 
-    /* Iterate through each node and return when the value is found */
     while(*current) {
         if( (*current)->value == x ) return;
         *previous = *current;
@@ -105,69 +103,53 @@ void search(Node *list, Node **current, Node **previous, int x) {
 
 /*
  *  Deletes a node from the given list after the predecessor node.
+ *  If the predecessor node is null, then we know that the node
+ *  is the head node in the list, so we delete the head.
+ *
+ *  Otherwise, we delete the predecessors next node and set
+ *  the list nodes next value to the deleted nodes successor
  *
  *  Returns an int of either 1 (success) or 0 (failure)
  */
-int deleteFromList(Node **list, Node *predecessor) {
-    Node **currentNode = list;
-
-    /* 
-     * If the previous node is null, then this is the first node in the list.
-     * Because this is the case, we just pop the first node from the list and
-     * return.
-     */
+int deletefromlist(Node **list, Node *predecessor) {
     if(predecessor == NULL) {
-        Node *tempNode = *list;
-        *currentNode = (*currentNode)->next;
+        Node *tempnode = *list;
+        *list = (*list)->next;
 
+        freenode(&tempnode);
+        return 1;
+    }
 
-        freeNode(&tempNode);
-
+    if((*list)->value == predecessor->value) {
+        Node *tempnode = predecessor->next;
+        (*list)->next = tempnode->next;
+        freenode(&tempnode);
         return 1;
     }
     
-    /* Otherwise we iterate through each node */
-    while(*currentNode) {
-        
-        /* If the next node is null, then something has gone wrong, and return error code 0*/
-        if( (*currentNode)->next == NULL ) {
-            return 0;
-        }
-
-        /* If the current value is the same as the predecessor value, then we need to delete the next node*/
-        if( (*currentNode)->value == predecessor->value ) {         
-            
-            Node *tempNode = (*currentNode)->next;
-            
-            /* Set the next node of the current node to the node AFTER the node we want to skip */
-            (*currentNode)->next = predecessor->next->next;
-
-
-            freeNode(&tempNode);
-
-            return 1;
-        }
-
-        *currentNode = (*currentNode)->next;
-
-    } 
-
     return 0;
 }
 
 /*
  * Allocates memory for a new node
  */
-void getNode(Node **pointer) {
+void getnode(Node **pointer) {
     *pointer = malloc(sizeof(Node));
 }
 
 /*
  * Prints out the provided list in
- * a readable format
+ * a readable format.
+ *
+ * If the list is empty then print
+ * "Empty"
  */
-void printList(Node *list) {
+void printlist(Node *list) {
     Node *current = list;
+
+    if(current == NULL) {
+        printf("Empty");
+    }
 
     while(current != NULL) {
         printf("%d ", current->value);
@@ -181,16 +163,14 @@ void printList(Node *list) {
  * Inserts a node with value 'x', at the
  * head of the provided list
  */
-int insertInList(Node **list, int x) {
-    Node *newNode;
+int insertinlist(Node **list, int x) {
+    Node *newnode;
 
-    /* Assign memory to new node */
-    getNode(&newNode);
+    getnode(&newnode);
     
-    /* Set value of node */
-    newNode->value = x;
-    newNode->next = *list;
-    *list = newNode;
+    newnode->value = x;
+    newnode->next = *list;
+    *list = newnode;
 
     return 1;
 
@@ -199,21 +179,21 @@ int insertInList(Node **list, int x) {
 
 /*
  * Iterates through each node in the list, and calls
- * the freeNode() function to free each node.
+ * the freenode() function to free each node from memory.
  *
  * This function essentially deletes the passed in
  * list.
  */
-void freeList(Node **list) {
+void freelist(Node **list) {
 
-    Node *currentNode = *list;
+    Node *currentnode = *list;
 
-    while(currentNode != NULL) {
-        Node *tempNode = currentNode;
+    while(currentnode != NULL) {
+        Node *tempnode = currentnode;
         
-        currentNode = currentNode->next;
+        currentnode = currentnode->next;
 
-        freeNode(&tempNode);
+        freenode(&tempnode);
     }
 
 }
@@ -221,9 +201,12 @@ void freeList(Node **list) {
 /* 
  * Generates and returns a random number 
  * between 0 and the defined RANGE variable.
+ *
+ * We add one to the "RANGE" variable to make
+ * this range inclusive
  */
-int nextNum() {
-    return (random() % RANGE);
+int nextnum() {
+    return (random() % (RANGE + 1));
 }
 
 /*
@@ -240,10 +223,8 @@ int main(int argc, char *argv[]) {
     int x;
 
 
-    /* Create seed for random number generator */
     srand(1);
 
-    /* Verify that the user input is accurage*/
     if(argc == 1) {
         usage(argv[0]);
     }
@@ -255,52 +236,41 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    /* Begin generating numbers */
     for(int i = 0; i < events; i++) {
-        x = nextNum();
+        x = nextnum();
             
-        Node** selectedList;
+        Node** selectedlist;
 
         if (x & 1) {
-            selectedList = &lodds;
+            selectedlist = &lodds;
         } else {
-            selectedList = &levens;
+            selectedlist = &levens;
         }
     
-        /* Check if the list is empty before searching */
-        if (*selectedList != NULL) {
-            search(*selectedList, &current, &previous, x);
+        if (*selectedlist != NULL) {
+            search(*selectedlist, &current, &previous, x);
             
-            /* 
-             * If current doesn't exist, then delete the item from the list,
-             * otherwise insert it.
-             */
             if(current != NULL) {
-                if (deleteFromList(selectedList, previous) == 0) {
-                    fprintf(stderr, "An error occurred deleting an element from the list. Exiting\n");
-                    exit(1);
-                }
+                deletefromlist(selectedlist, previous);
             } else {
-                insertInList(selectedList, x);
+                insertinlist(selectedlist, x);
             }
         } else {
-            insertInList(selectedList, x);
+            insertinlist(selectedlist, x);
         }
 
-        /* Set current back to null */
         current = NULL;
     }
   
 
-    /* Print and then delete each list from memory */
-    printf("Odds: ");
-    printList(lodds);
+    printf("Odd List: ");
+    printlist(lodds);
 
-    printf("Evens: ");
-    printList(levens);
+    printf("Even List: ");
+    printlist(levens);
 
-    freeList(&lodds);
-    freeList(&levens);
+    freelist(&lodds);
+    freelist(&levens);
 
 
     exit(0);
