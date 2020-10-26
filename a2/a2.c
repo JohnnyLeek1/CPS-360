@@ -198,6 +198,24 @@ void freelist(Node **list) {
 
 }
 
+int insertattail(Node **list, int event) {
+    Node *currentnode = *list;
+
+    while(currentnode != NULL && currentnode->next != NULL) {
+        currentnode = currentnode->next;
+    }
+
+    Node *newnode;
+    getnode(&newnode);
+
+    if(newnode == NULL) {
+        return 0;
+    }
+
+    newnode->value = event;
+    currentnode->next = newnode;
+    return 1;
+}
 /* 
  * Generates and returns a random number 
  * between 0 and the defined RANGE variable.
